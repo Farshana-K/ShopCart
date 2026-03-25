@@ -37,7 +37,7 @@ exports.makePayment = async (req, res) => {
     const user = await User.findById(req.session.user._id);
       
    const cpn=await Coupons.findOne({code:appliedCoupon});
-   if(!cpn.isActive){
+   if( cpn && !cpn.isActive){
 
      req.flash("error", "This applied coupon become inactive. Please try again");
      
