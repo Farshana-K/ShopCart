@@ -1,12 +1,11 @@
-const transporter = require("../config/nodemailer");
+const resend = require('../config/resend');
 
 module.exports = async (email, otp) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
+  await resend.emails.send({
+    from: process.env.RESEND_FROM_EMAIL,
     to: email,
-    subject: "ShopCart OTP ",
-    html: `<h3>Your new OTP is: <b>${otp}</b></h3><p>This OTP is valid for 60 seconds.</p>`,
-  };
-
-  await transporter.sendMail(mailOptions);
+    subject: 'ShopCart OTP',
+    html: `<h3>Your new OTP is: <b>${otp}</b></h3>
+           <p>This OTP is valid for 60 seconds.</p>`,
+  });
 };
