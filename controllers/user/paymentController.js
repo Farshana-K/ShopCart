@@ -36,9 +36,9 @@ exports.makePayment = async (req, res) => {
     } = req.body;
     const user = await User.findById(req.session.user._id);
       
-   const cpn=await Coupons.findOne({code:appliedCoupon});
-   if(cpn && !cpn.isActive){
+    const cpn = await Coupons.findOne({ code: appliedCoupon });
 
+    if (cpn && !cpn.isActive) {
      req.flash("error", "This applied coupon become inactive. Please try again");
      
      if(payment==='razorpay')
