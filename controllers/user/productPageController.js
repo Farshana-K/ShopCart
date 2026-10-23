@@ -343,19 +343,28 @@ exports.getProductPage = async (req, res) => {
     delete queryParams.page;
     if (req.query.search) queryParams.search = req.query.search;
 
-    // ====== Wishlist + Cart Counts ======
-    const user = await User.findById(req.session.user._id).lean();
-    const cartCount = user?.cart?.length || 0;
-    const wishlistCount = user?.wishlist?.length || 0;
+   // ====== Wishlist + Cart Counts ======
+let cartCount = 0;
+let wishlistCount = 0;
+let wishlistProductIds = [];
 
-    // ✅ Find wishlist product IDs
-    const wishlistProductIds = user?.wishlist?.map((item) => item.productId.toString()) || [];
+const userId = req.session.user?._id;
 
-    // ✅ Mark each product as wishlisted or not
-    actualProducts = actualProducts.map((p) => ({
-      ...p,
-      isWishlisted: wishlistProductIds.includes(p._id.toString()),
-    }));
+if (userId) {
+  const user = await User.findById(userId).lean();
+
+  cartCount = user?.cart?.length || 0;
+  wishlistCount = user?.wishlist?.length || 0;
+
+  wishlistProductIds =
+    user?.wishlist?.map((item) => item.productId.toString()) || [];
+}
+
+// ====== Mark Wishlisted Products ======
+actualProducts = actualProducts.map((product) => ({
+  ...product,
+  isWishlisted: wishlistProductIds.includes(product._id.toString()),
+}));
 
     // ====== Render Page ======
     res.render('user/allProducts', {
@@ -391,70 +400,100 @@ exports.getProductDetails = async (req, res) => {
     const id = req.params.id;
 
     const product = await Products.findOne({ _id: id }).lean();
-    const gender=product.genderId;
-    if (!product) return res.redirect('/products');
-    const type=await ProductType.findById(product.productTypeId);
-    //finding the offers available for a product
-    const offers=await Offers.find({category:type.name,isActive:true});
 
-    const variants = await productVariant.find({ productId: id }).populate('colorId fitId size').lean();
+    if (!product) {
+      return res.redirect('/products');
+    }
+
+    const gender = product.genderId;
+
+    const type = await ProductType.findById(product.productTypeId);
+
+    // Find active offers for the product category
+    const offers = type
+      ? await Offers.find({ category: type.name, isActive: true })
+      : [];
+
+    const variants = await ProductVariant.find({
+      productId: id,
+      isActive: true,
+    })
+      .populate('colorId fitId size')
+      .lean();
 
     const relatedProducts = await Products.find({
       productTypeId: product.productTypeId,
-      genderId:gender,
-      _id: { $ne: id },
-      isActive: true
-    }).limit(4).lean();
-
-     const relatedDatas = await Promise.all(
-      relatedProducts.map(async (prod) => {
-      const firstVariant = await ProductVariant.findOne({
-        productId: prod._id,
-        isActive: true
-      })
-      .sort({ createdAt: 1 })
+      genderId: gender,
+      _id: { $ne: product._id },
+      isActive: true,
+    })
+      .limit(4)
       .lean();
 
-      return {
-        ...prod,
-        firstVariantImages: firstVariant ? firstVariant.images : [],
-        basePrice:firstVariant ? firstVariant.basePrice :0,
-        discountPrice:firstVariant ? firstVariant.discountPrice : 0
-      };
-    })
-  );
+    const relatedDatas = await Promise.all(
+      relatedProducts.map(async (prod) => {
+        const firstVariant = await ProductVariant.findOne({
+          productId: prod._id,
+          isActive: true,
+        })
+          .sort({ createdAt: 1 })
+          .lean();
 
-    const reviews=await Review.find({productId:product._id})
-                .populate("userId","name");
+        return {
+          ...prod,
+          firstVariantImages: firstVariant?.images || [],
+          basePrice: firstVariant?.basePrice || 0,
+          discountPrice: firstVariant?.discountPrice || 0,
+        };
+      })
+    );
+
+    const reviews = await Review.find({ productId: product._id })
+      .populate('userId', 'name');
+
     let avgRating = 0;
+
     if (reviews.length > 0) {
-      const total = reviews.reduce((sum, r) => sum + r.rating, 0);
-      avgRating = (total / reviews.length).toFixed(1); // 1 decimal place
+      const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+      avgRating = (total / reviews.length).toFixed(1);
     }
-    
-    const count=reviews.length;
-    
+
+    const count = reviews.length;
+
     const images = variants[0]?.images || [];
     const basePrice = variants[0]?.basePrice || 0;
     const discountPrice = variants[0]?.discountPrice || 0;
 
-    const user=await User.findById(req.session.user._id);
-    const cartCount = user?.cart?.length || 0;
-      const wishlistCount = user?.wishlist?.length || 0;
-    res.render('user/productDetails', {
+    // Cart and wishlist counts for logged-in users only
+    let cartCount = 0;
+    let wishlistCount = 0;
+
+    const userId = req.session.user?._id;
+
+    if (userId) {
+      const user = await User.findById(userId).lean();
+
+      cartCount = user?.cart?.length || 0;
+      wishlistCount = user?.wishlist?.length || 0;
+    }
+
+    return res.render('user/productDetails', {
       product,
       variants,
-      images, basePrice,
+      images,
+      basePrice,
       discountPrice,
-       relatedProducts: relatedDatas,
-       reviews,
-       avgRating,count,offers,
-       cartCount,
-       wishlistCount
+      relatedProducts: relatedDatas,
+      reviews,
+      avgRating,
+      count,
+      offers,
+      cartCount,
+      wishlistCount,
     });
   } catch (err) {
-    console.error('Product Details Error:', err.message);
-    res.status(500).render('error/500');
+    console.error('Product Details Error:', err);
+    return res.status(500).render('error/500');
   }
 };
 

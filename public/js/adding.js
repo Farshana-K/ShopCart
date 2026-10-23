@@ -34,72 +34,100 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Example: Sending data when button is clicked
     const productId = document.body.dataset.productId;
-    cartBtn.addEventListener("click", () => {
-        if (!selectedSize || !selectedColor) return;
+    
 
-        fetch("/addToCart", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+cartBtn.addEventListener('click', async () => {
+    if (!selectedSize || !selectedColor) return;
+
+    try {
+        const response = await fetch('/addToCart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
-                productId: productId,
+                productId,
                 size: selectedSize,
                 color: selectedColor
             })
-        })
-        .then(res => res.json())
-       .then(data => {
-                Swal.fire({
-                    toast: true,
-                    position: "top-end",
-                    icon: data.success ? "success" : "warning",
-                    title: data.message,
-                    showConfirmButton: false,
-                    timer: 2000,
-                    timerProgressBar: true
-                });
-            })
-       .catch(err => {
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: "Something went wrong. Please try again.",
-            });
         });
-   }); 
+
+        console.log('Response status:', response.status);
+        console.log('Response URL:', response.url);
+        console.log('Content type:', response.headers.get('content-type'));
+
+        const data = await response.json();
+
+        console.log('Response data:', data);
+
+        if (data.redirectUrl) {
+            window.location.href = data.redirectUrl;
+            return;
+        }
+
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: data.success ? 'success' : 'warning',
+            title: data.message,
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
+    } catch (error) {
+        console.error('Add to cart error:', error);
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Please check the browser console for details.'
+        });
+    }
+});
 
 
-    wishlistBtn.addEventListener("click", () => {
-        if (!selectedSize || !selectedColor) return;
+wishlistBtn.addEventListener('click', async () => {
+    if (!selectedSize || !selectedColor) return;
 
-        fetch("/addToWishlist", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+    try {
+        const response = await fetch('/addToWishlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
-                productId:  productId,
+                productId,
                 size: selectedSize,
                 color: selectedColor
             })
-        })
-        .then(res => res.json())
-         .then(data => {
-            Swal.fire({
-                toast: true,
-                position: "top-end",
-                icon: data.success ? "success" : "info",
-                title: data.message,
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true
-            });
-        })
+        });
 
-            .catch(err => {
-                Swal.fire({
-                    icon: "error",
-                    title: "Error",
-                    text: "Something went wrong. Please try again.",
-                });
-            });
-    });
+        const data = await response.json();
+
+        if (data.redirectUrl) {
+            window.location.href = data.redirectUrl;
+            return;
+        }
+
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: data.success ? 'success' : 'warning',
+            title: data.message,
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
+    } catch (error) {
+        console.error('Add to wishlist error:', error);
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Something went wrong. Please try again.'
+        });
+    }
+});
+
 });
 

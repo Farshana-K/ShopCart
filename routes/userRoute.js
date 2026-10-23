@@ -50,11 +50,11 @@ router.get('/resend-otp', auth.isUserLoggedOut, passwordController.resendPasswor
 router.post('/change-password', auth.isUserLoggedOut, changePasswordValidationRules, passwordController.updatePassword);          //post request to change password
 
 //======Product pages=====//
-router.get('/products', auth.isUserLoggedIn, productPageController.getProductPage); // All products
-router.get('/products/:gender', auth.isUserLoggedIn, productPageController.getProductPage);
-router.get('/details/:id', auth.isUserLoggedIn, productPageController.getProductDetails);
-router.get('/search',auth.isUserLoggedIn,productPageController.searchProducts);
-router.get('/api/products/:productId/variants',auth.isUserLoggedIn,productPageController.getFirstVariant);
+router.get('/products', productPageController.getProductPage); // All products
+router.get('/products/:gender', productPageController.getProductPage);
+router.get('/details/:id', productPageController.getProductDetails);
+router.get('/search',productPageController.searchProducts);
+router.get('/api/products/:productId/variants',productPageController.getFirstVariant);
 
 //======Profile======//
 router.get('/profile', auth.isUserLoggedIn, profileController.getProfilePage);
@@ -73,12 +73,12 @@ router.delete('/deleteAddress/:id',auth.isUserLoggedIn,addressController.deleteA
 
 //====cart and wishlist management=====//
 
-router.post('/addToWishlist',auth.isUserLoggedIn,wishlistController.addToWishlist);
+router.post('/addToWishlist',auth.isUserLoggedInApi,wishlistController.addToWishlist);
 router.get('/wishlist',auth.isUserLoggedIn,wishlistController.getWishlistPage);
 router.get('/addToCart/:productId/:variantId',auth.isUserLoggedIn,wishlistController.addFromWishlist);
 router.post('/wishlistItemDelete/:productId/:variantId',auth.isUserLoggedIn,wishlistController.deleteFromWishlist);
 
-router.post('/addtoCart',auth.isUserLoggedIn,cartController.addToCart);
+router.post('/addtoCart',auth.isUserLoggedInApi,cartController.addToCart);
 router.get('/cart',auth.isUserLoggedIn,cartController.getCartpage);
 router.get('/cart/update/:variantId/:action',auth.isUserLoggedIn,cartController.updateCart);
 router.get('/cart/remove/:variantId',auth.isUserLoggedIn,cartController.Remove);

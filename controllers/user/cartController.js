@@ -11,6 +11,14 @@ const mongoose = require('mongoose');
 exports.addToCart = async (req, res) => {
     try {  
 
+       // Check whether the user is logged in
+    if (!req.session.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Please sign in to add products to your cart.',
+        redirectUrl: '/login',
+      });
+    }
         const { productId, size, color } = req.body;
         const user = await User.findById(req.session.user._id).populate("cart.variantId");
         const product=await Products.findById(productId);

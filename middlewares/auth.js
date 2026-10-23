@@ -39,6 +39,44 @@ module.exports={
  },
 
 
+isUserLoggedInApi: async (req, res, next) => {
+    const sessionUser = req.session.user;
+
+    if (!sessionUser) {
+        return res.status(401).json({
+            success: false,
+            message: 'Please sign in to add products to your cart.',
+            redirectUrl: '/login'
+        });
+    }
+
+    try {
+        const freshUser = await User.findById(sessionUser._id);
+
+        if (!freshUser || freshUser.isBlocked) {
+            delete req.session.user;
+
+            return res.status(401).json({
+                success: false,
+                message: freshUser
+                    ? 'Your account is blocked.'
+                    : 'Please sign in to continue.',
+                redirectUrl: '/login'
+            });
+        }
+
+        req.session.user = freshUser;
+        return next();
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: 'Something went wrong. Please try again.'
+        });
+    }
+},
+
 
  
 
